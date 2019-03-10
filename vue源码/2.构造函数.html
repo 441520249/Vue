@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="demo"></div>
+    <script>
+        class Vue {
+            constructor(props) {
+                // console.log(props)
+                let el = this.$el = document.querySelector(props.el)
+                    // console.log(el)
+                let data = this.$data = props.data
+                    // console.log(data)
+
+                Object.keys(data).forEach((key) => {
+                    this.proxyData(key)
+                })
+            }
+            proxyData(key) {
+                let self = this
+                    // console.log(self)
+                Object.defineProperty(self, key, {
+                    set(newValue) {
+                        self.$data[key] = newValue
+                        console.log("值发生了更改", newValue)
+                    },
+                    get() {
+                        console.log("我查看了该值")
+                        return self.$data[key]
+                    }
+                })
+            }
+        }
+        let vm = new Vue({
+            el: "#demo",
+            data: {
+                name: 'leslie',
+                age: 28
+            }
+        })
+    </script>
+</body>
+
+</html>

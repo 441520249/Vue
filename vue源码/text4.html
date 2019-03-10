@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="demo">
+        {{name}}
+        <p>{{age}}</p>
+        <input v-model="age">
+        <div v-html="h1"></div>
+    </div>
+    <script>
+        class Vue {
+            constructor(props) {
+                this.beforeCreate = props.beforeCreate
+                this.beforeCreate()
+                let el = this.$el = document.querySelector(props.el)
+                let data = this.$data = props.data
+                let watch = this.$watch = new Observer
+                Object.keys(data).forEach((key) => {
+                    this.proxy(key)
+                })
+                this.compile(el)
+                this.mounted = props.mounted
+                this.mounted()
+            }
+            proxy(key) {
+                let self = this
+                Object.defineProperty(self, key, {
+                    set(newValue) {
+                        self.$data[key] = newValue
+                        console.log('改值', newValue)
+                            // 触发 发布者
+                        this.$watch.emit(key, null)
+                    },
+                    get() {
+                        console.log('查值')
+                        return self.$data[key]
+                    }
+                })
+            }
+            compile(el) {
+                let nodes = el.childNodes
+                for (let node of nodes) {
+                    // console.log(node)
+                    switch (node.nodeType) {
+                        case 1:
+                            if (node.hasAttribute('v-model')) {
+                                let attrval = node.getAttribute('v-model')
+                                    // console.log(attrval)
+                                node.value = this[attrval]
+                                node.addEventListener('input', () => {
+                                    this[attrval] = node.value
+                                })
+                            } else if (node.hasAttribute('v-html')) {
+                                let attrval = node.getAttribute('v-html')
+                                node.innerHTML = this[attrval]
+                            }
+                        case 3:
+                            this.compileText(node, "textContent")
+                    }
+                }
+            }
+            compileText(node, type) {
+                let txt = node.textContent
+                    // console.log(txt)
+                let reg = /\{\{((?:.|\r?\n)+?)\}\}/g;
+                if (reg.test(txt)) {
+                    node.textContent = txt.replace(reg, (mechde, value) => {
+                        // 监听 订阅者
+                        this.$watch.on(value, () => {
+                            node.textContent = this[value]
+                        })
+                        return this[value]
+                    })
+
+                }
+            }
+        }
+        //观察者模式
+        class Observer {
+            constructor() {
+                    this.list = {}
+                }
+                // 监听 订阅者
+            on(key, fn) {
+                    if (!this.list[key]) {
+                        this.list[key] = [];
+                    }
+                    this.list[key].push(fn);
+                }
+                // 触发 发布者
+            emit(key, params) {
+                let fns = this.list[key];
+                if (!fns || fns.length === 0) {
+                    return false;
+                }
+                fns.forEach(fn => {
+                    fn(params);
+                });
+            }
+        }
+        let vm = new Vue({
+            el: '#demo',
+            data: {
+                name: 'leslie',
+                age: 28,
+                h1: `<h1>html</h1>`
+            },
+            beforeCreate() {
+                console.log(this.name)
+            },
+            mounted() {
+                console.log(this.name)
+            },
+        })
+    </script>
+</body>
+
+</html>

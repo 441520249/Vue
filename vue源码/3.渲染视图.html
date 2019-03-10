@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="demo">
+        {{name}}
+        <p>{{name}}</p>
+    </div>
+    <script>
+        class Vue {
+            constructor(props) {
+                // console.log(props)
+                let el = this.$el = document.querySelector(props.el)
+                    // console.log(el)
+                let data = this.$data = props.data
+                    // console.log(data)
+
+                // 遍历对象，劫持所有数据
+                Object.keys(data).forEach((key) => {
+                    this.proxyData(key)
+                })
+
+                //编译视图
+                this.compile(el)
+            }
+            proxyData(key) {
+                let self = this
+                    // console.log(self)
+                Object.defineProperty(self, key, {
+                    set(newValue) {
+                        self.$data[key] = newValue
+                        console.log("值发生了更改", newValue)
+                    },
+                    get() {
+                        console.log("我查看了该值")
+                        return self.$data[key]
+                    }
+                })
+            }
+            compile(el) {
+                let nodes = el.childNodes
+                    // console.log(nodes) //[text, p, text]
+                for (let node of nodes) {
+                    // console.log(node)
+                    // 区分文本节点还是元素节点
+                    switch (node.nodeType) {
+                        // 处理元素节点
+                        case 1:
+                            //处理属性节点
+                        case 2:
+                            // 处理文本节点
+                        case 3:
+                            this.compileText(node, 'textContent')
+                    }
+                }
+            };
+            // 处理文本节点函数
+            compileText(node, type) {
+                // console.log(node)
+                let txt = node.textContent
+                    // console.log(txt);
+                let reg = /\{\{((?:.|\r?\n)+?)\}\}/g;
+                if (reg.test(txt)) {
+                    node.textContent = txt.replace(reg, (metched, value) => {
+                        // console.log(metched, value) //{{name}} name
+                        // console.log(this[value])
+                        return this[value]
+                    })
+                }
+            }
+        }
+        let vm = new Vue({
+            el: "#demo",
+            data: {
+                name: 'leslie',
+                age: 28
+            }
+        })
+    </script>
+</body>
+
+</html>

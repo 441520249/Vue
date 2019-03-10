@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="app">
+        {{name}}
+        <p>{{age}}</p>
+        <input v-model="age">
+        <div v-html="h"></div>
+    </div>
+    <script>
+        class Vue {
+            constructor(props) {
+                let el = this.$el = document.querySelector(props.el)
+                let data = this.$data = props.data
+                    // console.log(el, data)
+                let watch = this.$watch = new Observer
+                Object.keys(data).forEach((key) => {
+                    this.proxyData(key)
+                })
+                this.compile(el)
+            }
+            proxyData(key) {
+                let self = this
+                Object.defineProperty(self, key, {
+                    set(newValue) {
+                        self.$data[key] = newValue
+                        console.log("改值", newValue)
+                            // 触发 发布者
+                        this.$watch.emit(key, null)
+                    },
+                    get() {
+                        console.log('查值')
+                        return self.$data[key]
+                    }
+                })
+            }
+            compile(el) {
+                let nodes = el.childNodes
+                    // console.log(nodes)
+                for (let node of nodes) {
+                    // console.log(node)
+                    switch (node.nodeType) {
+                        case 1:
+                            if (node.hasAttribute('v-model')) {
+                                let atvl = node.getAttribute('v-model')
+                                    // console.log(atvl)
+                                node.value = this[atvl]
+                                node.addEventListener('input', () => {
+                                    this[atvl] = node.value
+                                })
+                            } else if (node.hasAttribute('v-html')) {
+                                let atvl = node.getAttribute('v-html')
+                                node.innerHTML = this[atvl]
+                            }
+                        case 2:
+                        case 3:
+                            this.compileText(node, "textContent")
+                    }
+                }
+            }
+            compileText(node, type) {
+                let self = this
+                let txt = node.textContent
+                let reg = /\{\{((?:.|\r?\n)+?)\}\}/g;
+                if (reg.test(txt)) {
+                    node.textContent = txt.replace(reg, (metched, value) => {
+                        // 监听 订阅者
+                        this.$watch.on(value, () => {
+                            node.textContent = self[value]
+                        })
+                        return this[value]
+                    })
+                }
+            }
+        }
+        //观察者模式
+        class Observer {
+            constructor() {
+                    this.list = {}
+                }
+                // 监听 订阅者
+            on(key, fn) {
+                    if (!this.list[key]) {
+                        this.list[key] = [];
+                    }
+                    this.list[key].push(fn);
+                }
+                // 触发 发布者
+            emit(key, params) {
+                let fns = this.list[key];
+                if (!fns || fns.length === 0) {
+                    return false;
+                }
+                fns.forEach(fn => {
+                    fn(params);
+                });
+            }
+        }
+        let vm = new Vue({
+            el: '#app',
+            data: {
+                name: 'leslie',
+                age: 28,
+                h: `<h1>html</h1>`
+            }
+        })
+    </script>
+</body>
+
+</html>

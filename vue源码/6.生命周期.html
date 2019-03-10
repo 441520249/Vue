@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="demo">
+        {{name}}
+        <p>{{age}}</p>
+        <input v-model="age" />
+        <div v-html="h"></div>
+    </div>
+    <script>
+        class Vue {
+            constructor(props) {
+                // 数据和模板都没有
+                this.beforeCreate = props.beforeCreate;
+                this.beforeCreate()
+
+                // console.log(props)
+                let el = this.$el = document.querySelector(props.el)
+                    // console.log(el)
+                let data = this.$data = props.data
+                    // console.log(data)
+
+                // 利用发布订阅模式把M和V  数据劫持和视图编译建立关系
+                let watch = this.$watch = new Observer()
+
+                // 遍历对象，劫持所有数据
+                Object.keys(data).forEach((key) => {
+                    this.proxyData(key)
+                })
+
+                //编译视图
+                this.compile(el)
+
+                this.mounted = props.mounted
+                this.mounted()
+            }
+            proxyData(key) {
+                let self = this
+                    // console.log(self)
+                Object.defineProperty(self, key, {
+                    set(newValue) {
+                        self.$data[key] = newValue
+                        console.log("值发生了更改", newValue);
+                        // 发布者
+                        this.$watch.emit(key, null)
+                    },
+                    get() {
+                        console.log("我查看了该值")
+                        return self.$data[key]
+                    }
+                })
+            }
+            compile(el) {
+                let nodes = el.childNodes
+                    // console.log(nodes) //[text, p, text]
+                for (let node of nodes) {
+                    // console.log(node)
+                    // 区分文本节点还是元素节点
+                    switch (node.nodeType) {
+                        // 处理元素节点
+                        case 1:
+                            // 判断该节点是否有v-model这个属性值
+                            if (node.hasAttribute('v-model')) {
+                                // 把v-model="name"  的 name值获取回来
+                                let attrVal = node.getAttribute('v-model')
+                                    // console.log(attrVal)
+                                node.value = this[attrVal]
+                                    // 监听输入事件
+                                node.addEventListener('input', () => {
+                                    // 获取输入框的值
+                                    this[attrVal] = node.value;
+                                })
+                            } else if (node.hasAttribute('v-html')) {
+                                let attrVal = node.getAttribute('v-html')
+                                    // console.log(attrVal)
+                                node.innerHTML = this[attrVal]
+                            }
+                            //处理属性节点
+                        case 2:
+                            // 处理文本节点
+                        case 3:
+                            this.compileText(node, 'textContent')
+                    }
+                }
+            };
+            // 处理文本节点函数
+            compileText(node, type) {
+                let self = this
+                    // console.log(node)
+                let txt = node.textContent
+                    // console.log(txt);
+                let reg = /\{\{((?:.|\r?\n)+?)\}\}/g;
+                if (reg.test(txt)) {
+                    node.textContent = txt.replace(reg, (metched, value) => {
+                        // console.log(metched, value) //{{name}} name
+                        // console.log(this[value])
+                        //监听者
+                        this.$watch.on(value, () => {
+                            node.textContent = self.$data[value]
+                        })
+                        return this[value]
+                    })
+                }
+            }
+        }
+
+        //观察者模式
+        class Observer {
+            constructor() {
+                    // 空的队列
+                    // 事件队列，发布者和订阅者的供需关系来去决定去向
+                    this.list = {
+                        // 'eat':[()=>{
+                        //     console.log('eat')
+                        // }]
+                    }
+                }
+                // 监听 订阅者
+            on(key, fn) {
+                    if (!this.list[key]) {
+                        this.list[key] = [];
+                    }
+                    this.list[key].push(fn);
+                }
+                // 触发 发布者
+            emit(key, params) {
+                // 把所有存着回调函数的数组给取出来
+                let fns = this.list[key];
+                // 如果数组队列为空，则返回
+                if (!fns || fns.length === 0) {
+                    return false;
+                }
+                // 如果不为空，我就遍历所有的函数执行
+                fns.forEach(fn => {
+                    fn(params);
+                });
+            }
+        }
+
+
+        let vm = new Vue({
+            el: "#demo",
+            data: {
+                name: 'leslie',
+                age: 28,
+                h: `<p style='color:red'>123456</p>`
+            },
+            // 上台前
+            // 毫无准备 
+            // 没数据 没模板
+            beforeCreate() {
+                console.log("beforeCreate")
+                console.log(this.$data)
+                console.log(this.el)
+            },
+            // 背台词,化妆
+            // 有数据，没模板
+            created() {
+                console.log("created")
+                console.log(this.$data)
+                console.log(this.$el)
+            },
+            // 没登舞台
+            // 有数据，有模板
+            beforeMount() {
+                console.log("beforeMount")
+                console.log(this.$data)
+                console.log(this.$el)
+                console.log(document.querySelector(".site-header"))
+            },
+            // 登上舞台
+            // 模板 = > DOM
+            mounted() {
+                console.log("mounted")
+                console.log(this.$data)
+                console.log(this.$el)
+                    // ref
+                    // console.log(this.$refs)
+            },
+            // 表演前
+            beforeUpdate() {
+                alert(1)
+                console.log("beforeUpdate")
+                console.log(this.$data.name)
+                console.log(this.$el)
+            },
+            // 表演时候
+            updated() {
+                alert(2)
+                console.log("updated")
+                console.log(this.$data.name)
+                console.log(this.$el)
+            },
+            // 谢幕前
+            beforeDestroy() {
+                console.log("beforeDestroy")
+                console.log(this.$data.name)
+                console.log(this.$el)
+            },
+            // 谢幕后
+            destroyed() {
+                console.log("destroyed")
+                console.log(this.$data.name)
+                console.log(this.$el)
+            }
+
+        })
+    </script>
+</body>
+
+</html>

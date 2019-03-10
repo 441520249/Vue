@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <div id="demo">
+        {{name}}
+        <p>{{age}}</p>
+    </div>
+    <script>
+        class Vue {
+            //构造函数
+            constructor(props) {
+                // console.log(props)
+                let el = this.$el = document.querySelector(props.el)
+                let data = this.$data = props.data;
+                // console.log(el, data)
+
+                // 利用发布订阅模式把M和V  数据劫持和视图编译建立关系
+                let watch = this.$watch = new Observer;
+
+                //劫持整个对象
+                Object.keys(data).forEach((key) => {
+                    this.proxyData(key)
+                });
+                //编译视图
+                this.compile(el)
+            };
+            //劫持整个对象所有数据的方法
+            proxyData(key) {
+                let self = this
+                Object.defineProperty(self, key, {
+                    set(newValue) {
+                        self.$data[key] = newValue
+                        console.log("改值", newValue);
+                        // 发布者---------------------------------------------------
+                        this.$watch.emit(key, null)
+                    },
+                    get() {
+                        console.log("查值")
+                        return self.$data[key]
+                    }
+                })
+            };
+            //编译视图的方法
+            compile(el) {
+                let nodes = el.childNodes
+                    // console.log(el, nodes)
+                for (let node of nodes) {
+                    // console.log(node)
+                    // 区分文本节点还是元素节点
+                    switch (node.nodeType) {
+                        // 处理元素节点
+                        case 1:
+                            //处理属性节点
+                        case 2:
+                            // 处理文本节点
+                        case 3:
+                            this.compileText(node, 'textContent')
+                    }
+                }
+            };
+            // 处理文本节点函数
+            compileText(node, type) {
+                let self = this
+                    // console.log(node)
+                let txt = node.textContent
+                    // console.log(txt);
+                let reg = /\{\{((?:.|\r?\n)+?)\}\}/g;
+                //目的通过正则赋值 node.textContent = this[value]  {{name}} = leslie
+                if (reg.test(txt)) {
+                    node.textContent = txt.replace(reg, (metched, value) => {
+                        // console.log(metched, value) //{{name}} name
+                        // console.log(this[value])
+                        //监听者---------------------------------------------------
+                        this.$watch.on(value, () => {
+                            node.textContent = self.$data[value]
+                        })
+                        return this[value]
+                    })
+                }
+            }
+        }
+        //观察者模式
+        class Observer {
+            constructor() {
+                    // 空的队列
+                    // 事件队列，发布者和订阅者的供需关系来去决定去向
+                    this.list = {
+                        // 'eat':[()=>{
+                        //     console.log('eat')
+                        // }]
+                    }
+                }
+                // 监听 订阅者
+            on(key, fn) {
+                    if (!this.list[key]) {
+                        this.list[key] = [];
+                    }
+                    this.list[key].push(fn);
+                }
+                // 触发 发布者
+            emit(key, params) {
+                // 把所有存着回调函数的数组给取出来
+                let fns = this.list[key];
+                // 如果数组队列为空，则返回
+                if (!fns || fns.length === 0) {
+                    return false;
+                }
+                // 如果不为空，我就遍历所有的函数执行
+                fns.forEach(fn => {
+                    fn(params);
+                });
+            }
+        }
+        let vm = new Vue({
+            el: "#demo",
+            data: {
+                name: 'leslie',
+                age: 29
+            }
+        })
+    </script>
+</body>
+
+</html>
