@@ -1,6 +1,11 @@
 # Vue
 Some research demonstrations on Vue
 
+#vue的原理：
+-1
+-2
+-3
+-4
 
 # 技术点目录
 - 认识 Vue
