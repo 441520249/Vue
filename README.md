@@ -1,7 +1,8 @@
 # Vue
 Some research demonstrations on Vue
 
-#vue的原理：
+# vue的原理：
+
 -1 核心是object.defineproperty，通过遍历劫持对象的所有属性并给所有属性绑定两个关键的回调函数，一个get的函数，一个set的函数，当你拿值就会触发get的回调函数，当你改值就会触发set的回调函数。
 
 -2 通过对节点（元素、属性、文本）的操作进行视图的编译，vue的指令就是处理元素节点时对该元素添加对应的属性并给该属性添加对应的方法。
