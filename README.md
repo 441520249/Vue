@@ -13,6 +13,7 @@ Some research demonstrations on Vue
 
 - 5 生命周期就是在不同的时期触发对应的函数。
 
+
 # 技术点目录
 - 认识 Vue
 - 认识数据驱动模式
