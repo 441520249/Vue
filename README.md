@@ -1,7 +1,7 @@
 # Vue
 Some research demonstrations on Vue
 
-加油  
+加油     
 
 # vue的原理：
 
