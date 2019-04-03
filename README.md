@@ -1,7 +1,5 @@
 # Vue
-Some research demonstrations on Vue
-
-加油     
+Some research demonstrations on Vue    
 
 # vue的原理：
 
